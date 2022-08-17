@@ -3,8 +3,6 @@ GameState :: enum {
     PLAYER_CREATION_1;
     PLAYER_CREATION_2;
     WAR_FACE;
-    MENU_LOAD;
-    MENU_SAVE;
     PLAYING;
     BATTLE;
 }
@@ -152,12 +150,8 @@ update :: (
             player_creation_2(w, player, font, theme);
         case .WAR_FACE;
             war_face(w, font, theme);
-        case .MENU_LOAD;
-            menu_load();
-        case .MENU_SAVE;
-            menu_save();
         case .PLAYING;
-            playing();
+            playing(w, player, font);
         case .BATTLE;
             battle();
     }
@@ -311,18 +305,21 @@ player_creation_2 :: (w: *WindowSettings, player: *Player, font: *Font, theme: O
     r.x += k * 1.5;
     if button(r, "Kampfærdighed", *button_theme) {
         player.fixed_stats.strength += 2;
+        player.current_stats = player.fixed_stats;
         w.game_state = .WAR_FACE;
     }
 
     r.y -= k + k * 0.2;
     if button(r, "Helbred", *button_theme) {
         player.fixed_stats.health += 2;
+        player.current_stats = player.fixed_stats;
         w.game_state = .WAR_FACE;
     }
 
     r.y -= k + k * 0.2;
     if button(r, "Behændighed", *button_theme) {
         player.fixed_stats.agility += 2;
+        player.current_stats = player.fixed_stats;
         w.game_state = .WAR_FACE;
     }
 }
@@ -341,35 +338,60 @@ war_face :: (w: *WindowSettings, font: *Font, theme: Overall_Theme) {
 
     
     if w.war_face.width != 1 && w.war_face.height != 1 {
-        draw_war_face(w, *label_theme);
+        w.game_state = .PLAYING;
     } else {
         r := get_rect(w.window_width / 2.0 - label_size, w.window_height / 2.0 + label_size / 2.0, label_size * 2, label_size / 6.0);
         label(r, "Træk et billede ind til din karakter", *label_theme);
     }
 }
 
-draw_war_face :: (w: *WindowSettings, label_theme: *Label_Theme) {
+draw_war_face :: (w: *WindowSettings, font: *Font) {
     Simp.set_shader_for_images(*w.war_face);
     Simp.immediate_begin();
+    
+    label_theme: Label_Theme;
+    label_theme.alignment = .Center;
+    label_theme.text_color = .{.5, .5, .5, 1};
 
     width := w.window_height / 4.0;
     k := get_k(w);
 
     v2 :: make_vector2;
     r := get_rect(k / 4, width, k * 2, k / 2);
-    label(r, "Krigs ansigt", label_theme);
     Simp.immediate_quad(v2(0, 0), v2(width, 0), v2(width, width), v2(0, width));
+    label(r, "Krigs ansigt", *label_theme);
 }
 
-menu_load :: () {
+draw_stats :: (w: *WindowSettings, p: *Player) {
+    k := get_k(w);
+    label_size := k * 2.33;
+    label_theme: Label_Theme;
+    label_theme.alignment = .Left;
+    label_theme.text_color = .{.5, .5, .5, 1};
+    r := get_rect(k / 2, w.window_height - k, label_size, label_size / 8);
+    text := tprint("% / %", p.current_stats.strength, p.fixed_stats.strength);
+    label(r, "Kampfærdighed", *label_theme);
+    label_theme.alignment = .Right;
+    label(r, text, *label_theme);
     
+    r.y -= label_size / 8 + 4;
+    text = tprint("% / %", p.current_stats.health, p.fixed_stats.health);
+    label_theme.alignment = .Left;
+    label(r, "Helbred", *label_theme);
+    label_theme.alignment = .Right;
+    label(r, text, *label_theme);
+
+    r.y -= label_size / 8 + 4;
+    text = tprint("% / %", p.current_stats.agility, p.fixed_stats.agility);
+    label_theme.alignment = .Left;
+    label(r, "Behændighed", *label_theme);
+    label_theme.alignment = .Right;
+    label(r, text, *label_theme);
 }
 
-menu_save :: () {
-
-}
-
-playing :: () {
+playing :: (w: *WindowSettings, p: *Player, font: *Font) {
+    draw_war_face(w, font);
+    draw_stats(w, p);
     // Stats
     // Items
     // Fight Monster
