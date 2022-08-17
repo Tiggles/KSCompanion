@@ -2,6 +2,7 @@ GameState :: enum {
     MENU;
     PLAYER_CREATION_1;
     PLAYER_CREATION_2;
+    WAR_FACE;
     MENU_LOAD;
     MENU_SAVE;
     PLAYING;
@@ -40,6 +41,7 @@ WindowSettings :: struct {
     game_state: GameState;
     current_theme: Default_Themes = Default_Themes.Blood_Vampire;
     quit: bool = false;
+    war_face: Simp.Texture;
 }
 
 main :: () {
@@ -111,7 +113,9 @@ main :: () {
                     // TODO(Jonas): 
                     // for dropped_files free(it);
                     // array_reset(*dropped_files);
-                    for event.files print("%\n", it);
+                    for event.files {
+                        Simp.texture_load_from_file(*w.war_face, it);
+                    }
             }
         }
         
@@ -146,6 +150,8 @@ update :: (
             player_creation_1(w, player, font, theme);
         case .PLAYER_CREATION_2;
             player_creation_2(w, player, font, theme);
+        case .WAR_FACE;
+            war_face(w, font, theme);
         case .MENU_LOAD;
             menu_load();
         case .MENU_SAVE;
@@ -297,7 +303,7 @@ player_creation_2 :: (w: *WindowSettings, player: *Player, font: *Font, theme: O
     label_theme: Label_Theme;
     label_theme.alignment = .Center;
     label_theme.text_color = .{.5, .5, .5, 1};
-    label(r, "Specialisering", *label_theme);
+    label(r, "Specialisering (+2)", *label_theme);
 
     r.w = 3 * k;
     r.h = k;
@@ -305,20 +311,54 @@ player_creation_2 :: (w: *WindowSettings, player: *Player, font: *Font, theme: O
     r.x += k * 1.5;
     if button(r, "Kampfærdighed", *button_theme) {
         player.fixed_stats.strength += 2;
-        w.game_state = .PLAYING;
+        w.game_state = .WAR_FACE;
     }
 
     r.y -= k + k * 0.2;
     if button(r, "Helbred", *button_theme) {
         player.fixed_stats.health += 2;
-        w.game_state = .PLAYING;
+        w.game_state = .WAR_FACE;
     }
 
     r.y -= k + k * 0.2;
     if button(r, "Behændighed", *button_theme) {
         player.fixed_stats.agility += 2;
-        w.game_state = .PLAYING;
+        w.game_state = .WAR_FACE;
     }
+}
+
+get_k :: (w: *WindowSettings) -> float32 {
+    return w.window_height * 0.1;
+}
+
+war_face :: (w: *WindowSettings, font: *Font, theme: Overall_Theme) {
+    label_theme: Label_Theme;
+    label_theme.alignment = .Center;
+    label_theme.text_color = .{.5, .5, .5, 1};
+
+    k := get_k(w);
+    label_size := k * 2.33;
+
+    
+    if w.war_face.width != 1 && w.war_face.height != 1 {
+        draw_war_face(w, *label_theme);
+    } else {
+        r := get_rect(w.window_width / 2.0 - label_size, w.window_height / 2.0 + label_size / 2.0, label_size * 2, label_size / 6.0);
+        label(r, "Træk et billede ind til din karakter", *label_theme);
+    }
+}
+
+draw_war_face :: (w: *WindowSettings, label_theme: *Label_Theme) {
+    Simp.set_shader_for_images(*w.war_face);
+    Simp.immediate_begin();
+
+    width := w.window_height / 4.0;
+    k := get_k(w);
+
+    v2 :: make_vector2;
+    r := get_rect(k / 4, width, k * 2, k / 2);
+    label(r, "Krigs ansigt", label_theme);
+    Simp.immediate_quad(v2(0, 0), v2(width, 0), v2(width, width), v2(0, width));
 }
 
 menu_load :: () {
