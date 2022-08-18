@@ -13,10 +13,18 @@ Stats :: struct {
     agility: u8 = 6;
 }
 
+DEFAULT_ITEM_TEXT :: "Udfyld genstand.";
+
+Item :: struct {
+    name: string;
+    amount: int = 1;
+}
+
 Player :: struct {
     fixed_stats: Stats;
     current_stats: Stats;
-    items: [..]string;
+    items: [..]Item;
+    item_to_add: string = DEFAULT_ITEM_TEXT;
 }
 
 is_critical :: (dice_roll_1: int, dice_roll_2: int) -> bool {
@@ -65,6 +73,9 @@ main :: () {
     }
 
     player: Player;
+    for DEFAULT_STARTING_ITEMS {
+        array_add(*player.items, it);
+    }
 
     w.window_width, w.window_height = Simp.get_render_dimensions(w.window);
 
@@ -151,7 +162,7 @@ update :: (
         case .WAR_FACE;
             war_face(w, font, theme);
         case .PLAYING;
-            playing(w, player, font);
+            playing(w, player, font, theme);
         case .BATTLE;
             battle();
     }
@@ -389,11 +400,68 @@ draw_stats :: (w: *WindowSettings, p: *Player) {
     label(r, text, *label_theme);
 }
 
-playing :: (w: *WindowSettings, p: *Player, font: *Font) {
+playing :: (w: *WindowSettings, p: *Player, font: *Font, theme: Overall_Theme) {
     draw_war_face(w, font);
     draw_stats(w, p);
-    // Stats
-    // Items
+
+    text_theme := theme.text_input_theme;
+    text_theme.font = font;
+ 
+    k := get_k(w);
+    r := get_rect(w.window_width - k - 5 * k, w.window_height - k, 5 * k, font.character_height * 1.35);
+
+    act, new_text := text_input(r, DEFAULT_ITEM_TEXT, *text_theme);
+
+    if act == {
+        case .ENTERED; {
+            any := false;
+            trimmed := trim_right(new_text, " \t\r\n");
+            for *entry: p.items {
+
+                if compare_nocase(entry.name, trimmed) == 0 {
+                    entry.amount += 1;
+                    any = true;
+                    break;
+                }
+            }
+            item : Item;
+            item.name = trimmed;
+            if !any then array_add(*p.items, item);
+        }
+        case .ESCAPED; {
+            p.item_to_add = "";
+        } 
+    }
+    
+    r.y -= k / 2;
+    r.x -= k / 4;
+    r.w = k / 4 + k / 10;
+    r.h = k / 4 + k / 10;
+
+    button_theme := theme.button_theme;
+    button_theme.font = font;
+    button_theme.enable_variable_frame_thickness = true;   
+
+    button_index := 0; 
+    for *p.items {
+        r.y -= k / 12;
+        if button(r, "-", *button_theme, button_index) { 
+            it.amount -= 1;
+            if it.amount == 0 {
+                array_ordered_remove_by_index(*p.items, button_index);
+            }
+        }
+        r.x += r.w;
+        if button(r, "+", *button_theme, button_index) {
+            it.amount += 1;
+        }
+        r.x -= r.w;
+        r.y += k / 12;
+        button_index += 1;
+        Simp.draw_text(font, xx (r.x + font.em_width * 4.0), xx r.y, tprint("%", it.amount));
+        Simp.draw_text(font, xx (r.x + font.em_width * 6.0), xx r.y, tprint("%", it.name));
+        r.y -= k / 2;
+    }
     // Fight Monster
 }
     
@@ -406,12 +474,12 @@ init_font :: (window_height: int) -> *Font {
     return Simp.get_font_at_size("Assets", "Karla-Regular.ttf", 24);
 }
 
-default_starting_items :: string.[
-    "Et slagsværd",
-    "En læderrustning",
-    "En pung med fem guldstykker",
-    "Et fåreskinstæppe som du bruger, når du sover",
-    "8 stykker proviant"
+DEFAULT_STARTING_ITEMS :: Item.[
+    Item.{"Slagsværd", 1},
+    Item.{"Læderrustning", 1},
+    Item.{"Guldstykker", 5},
+    Item.{"Fåreskinstæppe", 1},
+    Item.{"Proviant", 8}
 ];
 
 #run {
