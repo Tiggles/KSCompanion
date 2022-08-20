@@ -44,7 +44,7 @@ WindowSettings :: struct {
     window: Window_Type;
     window_width: s32 = 1280;
     window_height: s32 = 720;
-    game_state: GameState;
+    game_state: GameState = .PLAYING;
     current_theme: Default_Themes = Default_Themes.Blood_Vampire;
     quit: bool = false;
     war_face: Simp.Texture;
@@ -186,7 +186,7 @@ menu :: (w: *WindowSettings, font: *Font, theme: Overall_Theme) {
 
     r.y -= k * 1.2;
     
-    if button(r, "Quit", *button_theme) {
+    if button(r, "Slut", *button_theme) {
         w.quit = true;
     }
 }
@@ -373,36 +373,126 @@ draw_war_face :: (w: *WindowSettings, font: *Font) {
     label(r, "Krigs ansigt", *label_theme);
 }
 
-draw_stats :: (w: *WindowSettings, p: *Player) {
+get_incr_button_size :: (k: float32) -> float {
+    return xx (k / 4.0 + k / 10.0);
+}
+
+clamp_stats :: (player: *Player) {
+    Clamp(*player.current_stats.strength, 1, player.fixed_stats.strength);
+    Clamp(*player.current_stats.health, 1, player.fixed_stats.health);
+    Clamp(*player.current_stats.agility, 1, player.fixed_stats.agility);
+}
+
+draw_stats :: (w: *WindowSettings, p: *Player, font: *Font, theme: Overall_Theme) {
     k := get_k(w);
+    button_size := get_incr_button_size(k);
     label_size := k * 2.33;
     label_theme: Label_Theme;
     label_theme.alignment = .Left;
     label_theme.text_color = .{.5, .5, .5, 1};
-    r := get_rect(k / 2, w.window_height - k, label_size, label_size / 8);
-    text := tprint("% / %", p.current_stats.strength, p.fixed_stats.strength);
+    button_theme := theme.button_theme;
+    button_theme.font = font;
+    button_theme.enable_variable_frame_thickness = true;
+
+    incr_button_size := get_incr_button_size(k);
+
+    r := get_rect(k / 2, w.window_height - k, label_size * 2.5, label_size / 2.8);
+
+
     label(r, "Kampfærdighed", *label_theme);
-    label_theme.alignment = .Right;
-    label(r, text, *label_theme);
-    
-    r.y -= label_size / 8 + 4;
-    text = tprint("% / %", p.current_stats.health, p.fixed_stats.health);
+    label_theme.alignment = .Right;    
+    button_r := get_rect(r.x + label_size - k, r.y, incr_button_size, incr_button_size);
+    button_r.y += incr_button_size - k / 10;
+    button_r.x = r.x + r.w - button_r.w * 3;
+    if button(button_r, "-", *button_theme, disable_over = p.current_stats.strength == 1, disable_press = p.current_stats.strength == 1) {
+        p.current_stats.strength -= 1;
+    }
+
+    button_r.x += incr_button_size;
+    if button(button_r, "+", *button_theme, disable_over = p.current_stats.strength == p.fixed_stats.strength, disable_press = p.current_stats.strength == p.fixed_stats.strength) {
+        p.current_stats.strength += 1;
+    }
+
+    number_label_r := get_rect(r.x + button_r.w * 3.8, r.y, r.w + k / 5, r.h);
+    label(number_label_r, tprint("% / %", p.current_stats.strength, p.fixed_stats.strength), *label_theme);
+
+    button_r.x += button_r.w * 6;
+    if button(button_r, "-", *button_theme, disable_over = p.current_stats.strength == 1, disable_press = p.current_stats.strength == 1) {
+        p.fixed_stats.strength -= 1;
+    }
+
+    button_r.x += incr_button_size;
+    if button(button_r, "+", *button_theme) {
+        p.fixed_stats.strength += 1;
+    }
+
+
+    r.y -= r.h;
     label_theme.alignment = .Left;
     label(r, "Helbred", *label_theme);
-    label_theme.alignment = .Right;
-    label(r, text, *label_theme);
+    label_theme.alignment = .Right;    
+    button_r = get_rect(r.x + label_size - k, r.y, incr_button_size, incr_button_size);
+    button_r.y += incr_button_size - k / 10;
+    button_r.x = r.x + r.w - button_r.w * 3;
+    if button(button_r, "-", *button_theme, disable_over = p.current_stats.health == 1, disable_press = p.current_stats.health == 1) {
+        p.current_stats.health -= 1;
+    }
 
-    r.y -= label_size / 8 + 4;
-    text = tprint("% / %", p.current_stats.agility, p.fixed_stats.agility);
+    button_r.x += incr_button_size;
+    if button(button_r, "+", *button_theme, disable_over = p.current_stats.health == p.fixed_stats.health, disable_press = p.current_stats.health == p.fixed_stats.health) {
+        p.current_stats.health += 1;
+    }
+
+    number_label_r = get_rect(r.x + button_r.w * 3.8, r.y, r.w + k / 5, r.h);
+    label(number_label_r, tprint("% / %", p.current_stats.health, p.fixed_stats.health), *label_theme);
+
+    button_r.x += button_r.w * 6;
+    if button(button_r, "-", *button_theme, disable_over = p.current_stats.health == 1, disable_press = p.current_stats.health == 1) {
+        p.fixed_stats.health -= 1;
+    }
+
+    button_r.x += incr_button_size;
+    if button(button_r, "+", *button_theme) {
+        p.fixed_stats.health += 1;
+    }
+
+
+    r.y -= r.h;
     label_theme.alignment = .Left;
     label(r, "Behændighed", *label_theme);
-    label_theme.alignment = .Right;
-    label(r, text, *label_theme);
+    label_theme.alignment = .Right;    
+    button_r = get_rect(r.x + label_size - k, r.y, incr_button_size, incr_button_size);
+    button_r.y += incr_button_size - k / 10;
+    button_r.x = r.x + r.w - button_r.w * 3;
+    if button(button_r, "-", *button_theme, disable_over = p.current_stats.agility == 1, disable_press = p.current_stats.agility == 1) {
+        p.current_stats.agility -= 1;
+    }
+
+    button_r.x += incr_button_size;
+    if button(button_r, "+", *button_theme, disable_over = p.current_stats.agility == p.fixed_stats.agility, disable_press = p.current_stats.agility == p.fixed_stats.agility) {
+        p.current_stats.agility += 1;
+    }
+
+    number_label_r = get_rect(r.x + button_r.w * 3.8, r.y, r.w + k / 5, r.h);
+    label(number_label_r, tprint("% / %", p.current_stats.agility, p.fixed_stats.agility), *label_theme);
+
+    button_r.x += button_r.w * 6;
+    if button(button_r, "-", *button_theme, disable_over = p.current_stats.agility == 1, disable_press = p.current_stats.agility == 1) {
+        p.fixed_stats.agility -= 1;
+    }
+
+    button_r.x += incr_button_size;
+    if button(button_r, "+", *button_theme) {
+        p.fixed_stats.agility += 1;
+    }
+    
+    
+    clamp_stats(p);
 }
 
 playing :: (w: *WindowSettings, p: *Player, font: *Font, theme: Overall_Theme) {
     draw_war_face(w, font);
-    draw_stats(w, p);
+    draw_stats(w, p, font, theme);
 
     text_theme := theme.text_input_theme;
     text_theme.font = font;
