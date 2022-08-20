@@ -44,7 +44,7 @@ WindowSettings :: struct {
     window: Window_Type;
     window_width: s32 = 1280;
     window_height: s32 = 720;
-    game_state: GameState = .PLAYING;
+    game_state: GameState = .MENU;
     current_theme: Default_Themes = Default_Themes.Blood_Vampire;
     quit: bool = false;
     war_face: Simp.Texture;
