@@ -515,7 +515,7 @@ playing :: (w: *WindowSettings, p: *Player, font: *Font, theme: Overall_Theme) {
                 }
             }
             item : Item;
-            item.name = trimmed;
+            item.name = copy_string(trimmed);
             if !any then array_add(*p.items, item);
         }
         case .ESCAPED; {
