@@ -532,6 +532,11 @@ playing :: (w: *WindowSettings, p: *Player, font: *Font, theme: Overall_Theme) {
     button_theme.font = font;
     button_theme.enable_variable_frame_thickness = true;   
 
+    
+    label_theme: Label_Theme;
+    label_theme.alignment = .Left;
+    label_theme.text_color = .{.5, .5, .5, 1};
+
     button_index := 0; 
     for *p.items {
         r.y -= k / 12;
@@ -545,12 +550,18 @@ playing :: (w: *WindowSettings, p: *Player, font: *Font, theme: Overall_Theme) {
         if button(r, "+", *button_theme, button_index) {
             it.amount += 1;
         }
-        r.x -= r.w;
-        r.y += k / 12;
-        button_index += 1;
-        Simp.draw_text(font, xx (r.x + font.em_width * 4.0), xx r.y, tprint("%", it.amount));
-        Simp.draw_text(font, xx (r.x + font.em_width * 6.0), xx r.y, tprint("%", it.name));
+
+        r_l := get_rect(r.x + k / 3, r.y, r.w, r.w);
+        count_label_text := tprint("%", it.amount);
+        r_l.w = xx (count_label_text.count * font.em_width) + k / 12; 
+        label(r_l, count_label_text, *label_theme);
+        r_l.x += k / 4;
+        item_label_text := tprint("%", it.name);
+        r_l.w = xx (item_label_text.count * font.em_width);
+        label(r_l, tprint("%", it.name), *label_theme);
         r.y -= k / 2;
+        r.x -= r.w;
+        button_index += 1;
     }
     // Fight Monster
 }
